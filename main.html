@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Envio de Código Python — Dark IDE</title>
+
+  <!-- Fonte monoespaçada -->
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #0b0f14;
+      --panel: #0f1620;
+      --accent: #7cdbff;
+      --muted: #9aa7b2;
+      --success: #49d08a;
+      --danger: #ff6b6b;
+      --glass: rgba(255,255,255,0.03);
+      --mono: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg, var(--bg), #061018 140%);
+      color: #e6eef3;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      gap:16px;
+    }
+
+    .card{
+      width:100%;
+      max-width:1100px;
+      height:80vh;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      box-shadow: 0 8px 40px rgba(2,6,12,0.7);
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+
+    .header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .title{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+
+    .dot{
+      width:12px;height:12px;border-radius:50%;
+      background: linear-gradient(135deg, #ff8a65, #ffcc80);
+      box-shadow:0 2px 6px rgba(0,0,0,0.6) inset;
+    }
+
+    h1{font-size:16px;margin:0;color:#eaf6ff}
+    p.desc{margin:0;color:var(--muted);font-size:13px}
+
+    .editor{
+      flex:1;
+      display:flex;
+      gap:12px;
+      min-height:0;
+    }
+
+    textarea#code{
+      flex:1;
+      background:linear-gradient(180deg, #071018, #071216);
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.03);
+      padding:16px;
+      font-family: var(--mono);
+      font-size:13px;
+      color:#d7f6ff;
+      resize:none;
+      outline:none;
+      line-height:1.5;
+      box-shadow: 0 4px 18px rgba(2,6,12,0.6);
+      overflow:auto;
+    }
+
+    .sidebar{
+      width:300px;
+      max-width:36%;
+      background:var(--panel);
+      border-radius:8px;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      border:1px solid rgba(255,255,255,0.02);
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:linear-gradient(180deg,#005a6f,#003b4d);
+      color:white;
+      border:none;
+      padding:10px 14px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+      box-shadow: 0 6px 18px rgba(2,6,12,0.5);
+    }
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+
+    .log{
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.015));
+      border-radius:8px;
+      padding:10px;
+      height:160px;
+      overflow:auto;
+      font-family: var(--mono);
+      font-size:12px;
+      color:#cfeefc;
+      border:1px solid rgba(255,255,255,0.02);
+    }
+
+    .warn{
+      background:linear-gradient(180deg, rgba(255,80,80,0.04), rgba(255,80,80,0.02));
+      color: #ffdede;
+      padding:8px;
+      border-radius:6px;
+      font-size:13px;
+      border:1px solid rgba(255,80,80,0.06);
+    }
+
+    .muted{
+      color:var(--muted); font-size:12px;
+    }
+
+    .small{
+      font-size:12px;color:var(--muted)
+    }
+
+    .row{
+      display:flex;align-items:center;gap:8px;justify-content:space-between;
+    }
+
+    .config{
+      display:flex;flex-direction:column;gap:8px;
+    }
+
+    .field{
+      display:flex;flex-direction:column;gap:6px;
+    }
+
+    input[type="text"]{
+      padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.03);background:rgba(255,255,255,0.01);color:#eaf6ff;font-family:var(--mono);font-size:13px;
+    }
+
+    .status-ok{color:var(--success)}
+    .status-err{color:var(--danger)}
+    footer.small{color:var(--muted);font-size:12px;text-align:left;margin-top:6px}
+    @media (max-width:900px){
+      .sidebar{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <div class="header">
+      <div class="title">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <h1>Enviar código Python — dark editor</h1>
+          <p class="desc">Cole seu código no campo grande e clique em <strong>Enviar Código</strong>. Atalho: <kbd>Ctrl</kbd>+<kbd>Enter</kbd></p>
+        </div>
+      </div>
+
+      <div class="small muted">
+        <div>Destinatário padrão: <code id="serverLabel">http://192.168.3.50</code></div>
+      </div>
+    </div>
+
+    <div class="editor" aria-live="polite">
+      <textarea id="code" placeholder="# Cole o seu código Python aqui..." spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off"></textarea>
+
+      <aside class="sidebar" aria-label="Painel lateral">
+        <div class="row">
+          <div style="display:flex;flex-direction:column">
+            <div style="font-weight:600">Ações</div>
+            <div class="muted">Envio ordenado: size → code</div>
+          </div>
+
+          <div>
+            <button id="sendBtn" class="btn" title="Enviar código">Enviar Código</button>
+            <button id="runBtn" class="btn" title="Rodar código">Rodar Código</button>
+          </div>
+        </div>
+
+        <div class="field config">
+          <label class="small">Servidor (edite se necessário)</label>
+          <input id="serverInput" type="text" value="http://192.168.3.50" />
+          <div class="small muted">O endpoint de size ficará em <code>/?size=</code> e o envio POST em <code>/code</code>.</div>
+        </div>
+
+        <div>
+          <div style="font-weight:600">Logs</div>
+          <div id="log" class="log" aria-live="polite"></div>
+        </div>
+
+        <div>
+          <div style="font-weight:600">Observações</div>
+          <div class="muted small">
+            • O servidor precisa permitir CORS (Access-Control-Allow-Origin) para que o navegador consiga fazer as requisições.<br>
+            • Se servir esta página via <strong>https</strong>, o servidor também precisa atender via https (caso contrário o navegador bloqueará por mixed-content).
+          </div>
+        </div>
+
+        <footer class="small">
+          Envio em: GET <code>/?size=bytes</code> → POST <code>/code</code> (body = código, Content-Type: text/plain)
+        </footer>
+      </aside>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center;justify-content:space-between">
+      <div class="muted small">Tamanho calculado com TextEncoder (bytes). Primeiro envio é obrigatório; segunda request só é feita se a primeira obtiver sucesso (status 2xx).</div>
+      <div>
+        <button id="clearBtn" class="btn" style="background:linear-gradient(180deg,#333,#111);padding:8px 10px">Limpar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // CONFIGURÁVEL
+    const DEFAULT_SERVER = '0.0.0.0'; // altere aqui se desejar
+
+    // Elementos
+    const textarea = document.getElementById('code');
+    const sendBtn = document.getElementById('sendBtn');
+    const runBtn = document.getElementById('runBtn');
+    const logEl = document.getElementById('log');
+    const serverInput = document.getElementById('serverInput');
+    const serverLabel = document.getElementById('serverLabel');
+    const clearBtn = document.getElementById('clearBtn');
+
+    // Inicializa
+    serverInput.value = DEFAULT_SERVER;
+    serverLabel.textContent = DEFAULT_SERVER;
+
+    function log(msg, type){
+      const time = new Date().toLocaleTimeString();
+      const line = document.createElement('div');
+      line.textContent = `[${time}] ${msg}`;
+      if(type === 'err') line.style.color = 'var(--danger)';
+      else if(type === 'ok') line.style.color = 'var(--success)';
+      logEl.prepend(line);
+    }
+
+    function setUIBusy(busy, sending=true){
+      sendBtn.disabled = busy;
+      sendBtn.textContent = busy ? (sending ? 'Enviando...' : "Rodando...") : 'Enviar Código';
+      runBtn.disabled = busy;
+      runBtn.textContent = busy ? (sending ? 'Enviando...' : "Rodando...") : 'Rodar Código';
+    }
+
+    // keyboard shortcut Ctrl+Enter
+    textarea.addEventListener('keydown', (e)=>{
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+
+    // Atualiza label quando muda
+    serverInput.addEventListener('input', ()=>{
+      serverLabel.textContent = serverInput.value || DEFAULT_SERVER;
+    });
+
+    clearBtn.addEventListener('click', ()=>{ textarea.value = ''; log('Editor limpo.'); textarea.focus(); });
+
+    // Função principal de envio
+    async function sendCodeFlow(){
+      const server = (serverInput.value || DEFAULT_SERVER).trim().replace(/\/+$/, ''); // remove trailing slash
+      serverLabel.textContent = server;
+      const code = textarea.value;
+      if (!code || code.trim().length === 0){ log('O campo está vazio — nada a enviar.', 'err'); return; }
+
+      // 1) enviar size como argumento (GET ?size=)
+      setUIBusy(true, true);
+      // 2) enviar código no body (POST /code)
+      try {
+        const codeUrl = `${server}/code`;
+        log(`Enviando código para: ${codeUrl}`);
+        const respCode = await fetch(codeUrl, {
+          method: 'POST',
+          // mode: 'cors',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: code,
+        });
+
+        if (!respCode.ok) {
+          const txt = await safeText(respCode);
+          throw new Error(`Status ${respCode.status} — ${txt || 'sem corpo'}`);
+        }
+
+        const responseText = await safeText(respCode);
+        log(`Código enviado com sucesso (status ${respCode.status}).`, 'ok');
+        if (responseText) log(`Resposta do servidor: ${responseText}`);
+      } catch (err) {
+        log(`Falha ao enviar código: ${err.message}`, 'err');
+      } finally {
+        setUIBusy(false);
+      }
+    }
+
+    async function sendRunSignal(){
+      const server = (serverInput.value || DEFAULT_SERVER).trim().replace(/\/+$/, ''); // remove trailing slash
+      serverLabel.textContent = server;
+
+      setUIBusy(true, false);
+
+      try {
+        const runUrl = `${server}/run`;
+        log(`Enviando sinal de execução para: ${runUrl}`);
+        const respCode = await fetch(runUrl, {
+          method: 'POST',
+        });
+
+        if (!respCode.ok) {
+          const txt = await safeText(respCode);
+          throw new Error(`Status ${respCode.status} — ${txt || 'sem corpo'}`);
+        }
+
+        const responseText = await safeText(respCode);
+        log(`Código enviado com sucesso (status ${respCode.status}).`, 'ok');
+        if (responseText) log(`Resposta do servidor: ${responseText}`);
+      } catch (err) {
+        log(`Falha ao enviar código: ${err.message}`, 'err');
+      } finally {
+        setUIBusy(false);
+      }
+    }
+    async function safeText(resp){
+      try { return await resp.text(); } catch(e){ return null; }
+    }
+
+    sendBtn.addEventListener('click', sendCodeFlow);
+    runBtn.addEventListener('click', sendRunSignal);
+
+    // Sugestão visual: preencha um código de exemplo curto
+    textarea.value = `# Exemplo: imprime 'Olá mundo' e soma\nprint('Olá, mundo')\n\n# Exemplo de função\ndef soma(a,b):\n    return a+b\n\nprint(soma(2,3))`;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+    // Avisos iniciais:
+    log('Pronto. Verifique se o servidor em 192.168.3.50 aceita CORS e se não há bloqueio por mixed-content (HTTPS).');
+
+  </script>
+</body>
+</html>
